@@ -1,20 +1,24 @@
-// scripts/deploy.js
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
 
 async function main() {
-  // 1) Fetch the deployer account
+  const { ethers } = hre;
+
+  // 1) Grab the deployer
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying with account:", deployer.address);
+  console.log("Deploying with account:", await deployer.getAddress());
 
-  // 2) Compile if needed (Hardhat does this for you in JS runs)
-  // await run("compile");
+  // 2) Get your contract factory
+  const CertFactory = await ethers.getContractFactory("CertificateNFT");
 
-  // 3) Deploy the CertificateNFT contract
-  const CertificateNFT = await ethers.getContractFactory("CertificateNFT");
-  const certificate = await CertificateNFT.deploy();
-  await certificate.deployed();
+  // 3) Kick off the deployment
+  const certificate = await CertFactory.connect(deployer).deploy();
+  console.log("▶️  Transaction hash:", certificate.deploymentTransaction().hash);
 
-  console.log("CertificateNFT deployed to:", certificate.address);
+  // 4) Wait for it to finish
+  await certificate.waitForDeployment();
+
+  // 5) Print the address
+  console.log("✅ CertificateNFT deployed to:", await certificate.getAddress());
 }
 
 main()

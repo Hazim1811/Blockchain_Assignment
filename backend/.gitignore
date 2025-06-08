@@ -15,3 +15,7 @@ node_modules
 
 # Hardhat Ignition default folder for deployments against a local node
 ignition/deployments/chain-31337
+
+# dotenv files
+ALCHEMY_URL=https://eth-rinkeby.alchemyapi.io/…
+PRIVATE_KEY=0xabc123…

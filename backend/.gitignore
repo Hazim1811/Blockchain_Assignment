@@ -17,5 +17,5 @@ node_modules
 ignition/deployments/chain-31337
 
 # dotenv files
-ALCHEMY_URL=https://eth-rinkeby.alchemyapi.io/…
+RPC_URL=http://127.0.0.1:8545
 PRIVATE_KEY=0xprivatekey

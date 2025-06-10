@@ -1,0 +1,81 @@
+/* Import the same Inter font you were using */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+/* Root page styling */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f5fcf7;
+  color: #222;
+  margin: 0;
+  padding: 2rem;
+}
+
+/* Headings */
+h1, h2 {
+  color: #2b7a4b;
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  padding: 10px 18px;
+  margin-top: 10px;
+  background-color: #34a853;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #2a9448;
+}
+
+/* Inputs */
+input {
+  padding: 8px;
+  margin: 8px 0;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+/* Navigation bar */
+nav {
+  margin: 20px 0;
+}
+
+nav button {
+  margin-right: 10px;
+}
+
+/* The “tab” panels */
+.tab {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #cce5d2;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  max-width: 500px;
+}
+
+/* Unordered lists (e.g. for “My Certificates”) */
+ul {
+  padding-left: 1.2rem;
+}
+
+/* Role badge next to your connected address */
+.role-badge {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  background-color: #d4f4df;
+  color: #2b7a4b;
+  border-radius: 6px;
+  font-weight: bold;
+}

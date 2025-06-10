@@ -1,24 +1,35 @@
+// backend/scripts/mint.js
 const hre = require("hardhat");
 
 async function main() {
-    const [, issuer] = await hre.ethers.getSigners();
-    const CERT_ADDRESS = "<PASTE_YOUR_DEPLOYED_ADDRESS>";
-    const cert = await hre.ethers.getContractAt("CertificateNFT", CERT_ADDRESS);
+  const { ethers } = hre;
+  // signer[1] = Issuer, signer[3] = Student
+  const [ , issuer, , student ] = await ethers.getSigners();
 
-    const metadataURI = "ipfs://QmYourHashHere";
-    // create the signature off‐chain
-    const sig = await issuer.signMessage(
-        hre.ethers.utils.toUtf8Bytes(metadataURI)
-    );
+  const CERT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
+  const cert = await ethers.getContractAt("CertificateNFT", CERT_ADDRESS);
 
-    const tx = await cert.connect(issuer).mintCertificate(
-        "<STUDENT_ADDRESS>", metadataURI, sig
-    );
-    await tx.wait();
-    console.log("✅ Minted Certificate #1 — tx:", tx.hash);
+  const metadataURI = "ipfs://bafkreifngst4ung7ztqyts5g5yvw6hl4xryzvgndhkj5ejfjd55q2pgzfa";
+
+  // 1) Compute the keccak256 of the URI
+  const digestHex = ethers.keccak256(ethers.toUtf8Bytes(metadataURI));
+  // 2) Convert that hash string into a byte array
+  const digestBytes = ethers.getBytes(digestHex);
+  // 3) Sign those 32 bytes (so it matches toEthSignedMessageHash(digest) on‐chain)
+  const sig = await issuer.signMessage(digestBytes);
+
+  // 4) Mint
+  const tx = await cert.connect(issuer).mintCertificate(   //student address
+    student.address,
+    metadataURI,
+    sig
+  );
+  await tx.wait();
+
+  console.log("✅ Minted Certificate #1 — tx:", tx.hash);
 }
 
 main().catch(e => {
-    console.error(e);
-    process.exit(1);
+  console.error(e);
+  process.exit(1);
 });

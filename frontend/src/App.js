@@ -5,27 +5,30 @@ import { getContract } from "./utils/getContract";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
-const ISSUER_ROLE   = keccak256(toUtf8Bytes("ISSUER_ROLE"));
+const ISSUER_ROLE = keccak256(toUtf8Bytes("ISSUER_ROLE"));
 const VERIFIER_ROLE = keccak256(toUtf8Bytes("VERIFIER_ROLE"));
 
 function App() {
   // Connection & role state
   const [account, setAccount] = useState("");
-  const [status, setStatus]   = useState("");
+  const [status, setStatus] = useState("");
 
   // Grant Issuer form
   const [grantAddr, setGrantAddr] = useState("");
 
   // Mint form
-  const [mintData, setMintData] = useState({ student: "", uri: "" });
+  const [mintData, setMintData] = useState({
+    student: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    uri: "ipfs://bafkreifngst4ung7ztqyts5g5yvw6hl4xryzvgndhkj5ejfjd55q2pgzfa"
+  });
 
   // View form & results
-  const [viewId, setViewId]         = useState("");
+  const [viewId, setViewId] = useState("");
   const [viewResult, setViewResult] = useState(null);
-  const [viewMeta, setViewMeta]     = useState(null);
+  const [viewMetadata, setViewMeta] = useState(null);
 
   // Verify form & result
-  const [verifyId, setVerifyId]     = useState("");
+  const [verifyId, setVerifyId] = useState("");
   const [verifyResult, setVerifyResult] = useState(null);
 
   // Auto-connect on mount
@@ -41,14 +44,14 @@ function App() {
       setAccount(addr);
 
       // check roles
-      const isAdmin    = await contract.hasRole(await contract.DEFAULT_ADMIN_ROLE(), addr);
-      const isIssuer   = await contract.hasRole(ISSUER_ROLE, addr);
+      const isAdmin = await contract.hasRole(await contract.DEFAULT_ADMIN_ROLE(), addr);
+      const isIssuer = await contract.hasRole(ISSUER_ROLE, addr);
       const isVerifier = await contract.hasRole(VERIFIER_ROLE, addr);
 
       setStatus(
         `Connected as ${addr} ` +
-        `${isAdmin    ? "[Admin]"    : ""} ` +
-        `${isIssuer   ? "[Issuer]"   : ""} ` +
+        `${isAdmin ? "[Admin]" : ""} ` +
+        `${isIssuer ? "[Issuer]" : ""} ` +
         `${isVerifier ? "[Verifier]" : ""}`
       );
     } catch (e) {
@@ -77,28 +80,29 @@ function App() {
     setStatus("⏳ Minting certificate…");
     try {
       const { signer, contract } = await getContract();
-      // hash + sign URI
-      const digestHex   = keccak256(toUtf8Bytes(mintData.uri));
+
+      // 1) Compute & sign the metadata URI
+      const digestHex = keccak256(toUtf8Bytes(mintData.uri));
       const digestBytes = getBytes(digestHex);
       const sig = await signer.signMessage(digestBytes);
 
-      // callStatic to get the new tokenId
-      const newId = await contract.callStatic.mintCertificate(
-        mintData.student, mintData.uri, sig
+      // 2) Actually call mintCertificate on-chain
+      const cid = "bafkreifngst4ung7ztqyts5g5yvw6hl4xryzvgndhkj5ejfjd55q2pgzfa";
+      const metadataURI = "ipfs://" + cid;
+      const txResponse = await contract.connect(signer).mintCertificate(
+        mintData.student,   // the student address
+        metadataURI,
+        sig
       );
+      await txResponse.wait();
 
-      // send the real tx
-      const txRes = await contract.connect(signer).mintCertificate(
-        mintData.student, mintData.uri, sig
-      );
-      await txRes.wait();
-
-      setStatus(`✅ Minted token #${newId.toString()}`);
+      setStatus(`✅ Minted token!`);
       setMintData({ student: "", uri: "" });
-    } catch (e) {
-      setStatus("❌ " + e.message);
+    } catch (err) {
+      setStatus("❌ " + err.message);
     }
   }
+
 
   // — 3) View Certificate & fetch off-chain JSON —
   async function onView(e) {
@@ -142,6 +146,7 @@ function App() {
   return (
     <div className="container py-4">
       <h1>🎓 CertificateNFT DApp</h1>
+      <p>Connected account: <b>{account || "Not connected"}</b></p>
       <p><b>{status}</b></p>
 
       {/* 1) Grant Issuer */}
@@ -159,31 +164,36 @@ function App() {
         </form>
       </section>
 
-      {/* 2) Mint Certificate */}
       <section className="my-4 p-3 border">
-        <h2>Mint Certificate (Issuer)</h2>
+        <h2>Mint Certificate</h2>
         <form onSubmit={onMint}>
-          <input
-            className="form-control mb-2"
-            placeholder="Student Address"
-            value={mintData.student}
-            onChange={e => setMintData({...mintData, student: e.target.value})}
-            required
-          />
-          <input
-            className="form-control mb-2"
-            placeholder="Metadata URI"
-            value={mintData.uri}
-            onChange={e => setMintData({...mintData, uri: e.target.value})}
-            required
-          />
+          <div className="mb-2">
+            <label>Student Address</label>
+            <input
+              className="form-control"
+              placeholder="0x3C44C...293BC"
+              value={mintData.student}
+              onChange={e => setMintData({ ...mintData, student: e.target.value })}
+              required
+            />
+          </div>
+          <div className="mb-2">
+            <label>Metadata URI</label>
+            <input
+              className="form-control"
+              placeholder="ipfs://bafy..."
+              value={mintData.uri}
+              onChange={e => setMintData({ ...mintData, uri: e.target.value })}
+              required
+            />
+          </div>
           <button className="btn btn-primary">Mint</button>
         </form>
       </section>
 
       {/* 3) View Certificate */}
       <section className="my-4 p-3 border">
-        <h2>View Certificate (Student/Verifier/Issuer)</h2>
+        <h2>View Certificate</h2>
         <form onSubmit={onView} className="d-flex">
           <input
             className="form-control me-2"
@@ -199,16 +209,22 @@ function App() {
             <p><b>URI:</b> {viewResult.uri}</p>
             <p><b>Issuer:</b> {viewResult.issuer}</p>
             <p><b>Issued:</b> {viewResult.issuedAt.toLocaleString()}</p>
-            <p><b>Signature:</b> {viewResult.signature}</p>
-            <hr />
-            <h5>Off‐Chain Metadata</h5>
-            <p><b>Name:</b> {viewMeta.name}</p>
-            <p><b>Description:</b> {viewMeta.description}</p>
-            <p><b>Grade:</b> {viewMeta.grade}</p>
-            <p><b>IssuedAt:</b> {viewMeta.issuedAt}</p>
+            <p><b>Signature:</b>
+              <span style={{ wordBreak: "break-all" }}>{viewResult.signature}</span>
+            </p>
+            {/* ← Insert it here, below the on-chain data: */}
+            {viewMetadata && (
+              <div className="mt-2">
+                <p><b>Name:</b> {viewMetadata.name}</p>
+                <p><b>Description:</b> {viewMetadata.description}</p>
+                <p><b>Grade:</b> {viewMetadata.grade}</p>
+                <p><b>Issued At (off-chain):</b> {viewMetadata.issuedAt}</p>
+              </div>
+            )}
           </div>
         )}
       </section>
+
 
       {/* 4) Verify Certificate */}
       <section className="my-4 p-3 border">
